@@ -91,4 +91,202 @@ calculator::~calculator()
 
 void calculator::digitClicked(){
     Button *clickedButton=qobject_cast<Button *>(sender());
+    int digitValue=clickedButton->text().toInt();
+
+    if(display->text() == "0" && digitValue == 0.0){
+        return;
+    }
+
+    if(waitingForOperand){
+        display->clear();
+        waitingForOperand=false;
+    }
+
+    display->setText(display->text() +QString::number(digitValue) );
 }
+
+void calculator::unaryOperatorClicked(){
+    Button *clickedButton=qobject_cast<Button *>(sender());
+    QString clickedOperator=clickedButton->text();
+
+    double operand=display->text().toDouble();
+    double result=0.0;
+
+    if(clickedOperator == tr("sqrt")){
+        if(operand < 0.0){
+            abortOperation();
+            return;
+        }
+        result=std::sqrt(operand);
+    }else if(clickedOperator == tr("x\302\262")){
+        result=std::pow(operand,2.0);
+    }else if(clickedOperator == tr("1/x")){
+        if(operand == 0.0){
+            abortOperation();
+            return;
+        }
+        result=1.0/operand;
+    }
+
+    display->setText(QString::number(result));
+    waitingForOperand=true;
+}
+
+void calculator::additiveOperator(){
+    Button *clickedButton=qobject_cast<Button *>(sender());
+    QString clickedOperator=clickedButton->text();
+    double operand=display->text().toDouble();
+
+    if(!pendingMultiplicativeOperator.isEmpty()){
+        if(!calculate(operand,pendingMultiplicativeOperator)){
+            abortOperation();
+            return;
+        }
+        display->setText(QString::number(factorSoFar));
+        operand=factorSoFar;
+        factorSoFar=0.0;
+        pendingMultiplicativeOperator.clear();
+    }
+
+    if(!pendingAdditiveOperator.isEmpty()){
+        if(!calculate(operand,pendingAdditiveOperator)){
+            abortOperation();
+            return;
+        }
+
+        display->setText(QString::number(sumSoFar));
+    }else{
+        sumSoFar=operand;
+    }
+
+    pendingAdditiveOperator=clickedOperator;
+    waitingForOperand=true;
+}
+
+void calculator::multiplicativeOperatorClicked(){
+    Button *clickedButton=qobject_cast<Button *>(sender());
+    QString clickedOperator=clickedButton->text();
+    double operand=display->text().toDouble();
+
+    if(!pendingMultiplicativeOperator.isEmpty()){
+        if(!calculate(operand,pendingMultiplicativeOperatorClicked)){
+            abortOperation();
+            return;
+        }
+        display->setText(QString::number(factorSoFar));
+    }else{
+        factorSoFar=operand;
+    }
+
+    pendingMultiplicativeOperator=clickedOperator;
+    waitingForOperand=true;
+}
+
+void calculator::equalClicked(){
+    double operand=display->text().toDouble();
+
+    if (!pendingMultiplicativeOperator.isEmpty()) {
+            if (!calculate(operand, pendingMultiplicativeOperator)) {
+                abortOperation();
+                return;
+            }
+            operand = factorSoFar;
+            factorSoFar = 0.0;
+            pendingMultiplicativeOperator.clear();
+        }
+        if (!pendingAdditiveOperator.isEmpty()) {
+            if (!calculate(operand, pendingAdditiveOperator)) {
+                abortOperation();
+                return;
+            }
+            pendingAdditiveOperator.clear();
+        } else {
+            sumSoFar = operand;
+        }
+
+        display->setText(QString::number(sumSoFar));
+        sumSoFar = 0.0;
+        waitingForOperand = true;
+}
+
+void calculator::pointClicked(){
+
+    if (waitingForOperand)
+        display->setText("0");
+    if (!display->text().contains('.'))
+        display->setText(display->text() + tr("."));
+    waitingForOperand = false;
+}
+
+void calculator::changeSignClicked(){
+
+    QString text = display->text();
+    double value = text.toDouble();
+
+    if (value > 0.0) {
+        text.prepend(tr("-"));
+    } else if (value < 0.0) {
+        text.remove(0, 1);
+    }
+    display->setText(text);
+}
+
+void calculator::backspaceClicked(){
+
+    if (waitingForOperand)
+        return;
+
+    QString text = display->text();
+    text.chop(1);
+    if (text.isEmpty()) {
+        text = "0";
+        waitingForOperand = true;
+    }
+    display->setText(text);
+}
+
+void calculator::clear(){
+
+    if (waitingForOperand)
+        return;
+
+    display->setText("0");
+    waitingForOperand = true;
+}
+
+void calculator::clearAll(){
+
+    sumSoFar = 0.0;
+    factorSoFar = 0.0;
+    pendingAdditiveOperator.clear();
+    pendingMultiplicativeOperator.clear();
+    display->setText("0");
+    waitingForOperand = true;
+}
+
+void calculator::clearMemory(){
+
+    sumInMemory = 0.0;
+}
+
+
+void calculator::readMemory(){
+
+    display->setText(QString::number(sumInMemory));
+    waitingForOperand = true;
+}
+
+
+void calculator::setMemory(){
+
+    equalClicked();
+    sumInMemory = display->text().toDouble();
+}
+
+
+void calculator::addToMemory(){
+
+    equalClicked();
+    sumInMemory += display->text().toDouble();
+}
+
