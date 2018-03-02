@@ -34,3 +34,6 @@ HEADERS += \
 
 FORMS += \
         calculator.ui
+## install
+#target.path = $$[QT_INSTALL_EXAMPLES]/widgets/widgets/calculator
+#INSTALLS += target

@@ -6,37 +6,39 @@
 #include <QtWidgets>
 
 calculator::calculator(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::calculator)
+    QWidget(parent)
+//    ui(new Ui::calculator)
 {
     ui->setupUi(this);
     sumInMemory=0.0;
     sumSoFar=0.0;
     factorSoFar=0.0;
-    waitingForoperand=true;
+    waitingForOperand=true;
 
     display=new QLineEdit("0");
-    display->setReadonly(true);
-    display->setAlingment(Qt::AlignRight);
-    display->setMaxlength(15);
+    display->setReadOnly(true);
+    display->setAlignment(Qt::AlignRight);
+    display->setMaxLength(15);
 
     QFont font=display->font();
     font.setPointSize(font.pointSize()+8);
-    display->setfont(font);
+    display->setFont(font);
 
     for(int i=0;i<NumDigitButtons;i++){
         digitButtons[i]=createButton(QString::number(i),SLOT(digitClicked()));
     }
+
+    // DEFINING BUTTONS
      Button *pointButton=createButton(tr("."),SLOT(pointClicked()));
      Button *changeSignButton=createButton(tr("\302\261"),SLOT(changeSignClicked()));
 
-     Button *backSpaceButton=createButton(tr("BackSpace"),SLOT(backSpaceClicked()));
+     Button *backSpaceButton=createButton(tr("BackSpace"),SLOT(backspaceClicked()));
      Button *clearButton=createButton(tr("Clear"),SLOT(clear()));
      Button *clearAllButton=createButton(tr("Clear All"),SLOT(clearAll()));
 
      Button *clearMemoryButton=createButton(tr("MC"),SLOT(clearMemory()));
      Button *readMemoryButton=createButton(tr("MR"),SLOT(readMemory()));
-     Button *setMemoryButton=createButton(tr("MS"),SLOT(setemory()));
+     Button *setMemoryButton=createButton(tr("MS"),SLOT(setMemory()));
      Button *addToMemoryButton=createButton(tr("M+"),SLOT(addToMemory()));
 
      Button *divisionButton=createButton(tr("\303\267"),SLOT(multiplicativeOperatorClicked()));
@@ -49,9 +51,12 @@ calculator::calculator(QWidget *parent) :
      Button *reciprocalButton=createButton(tr("1/x"),SLOT(unaryOperatorClicked()));
      Button *equalButton=createButton(tr("="),SLOT(equalClicked()));
 
+
+     // DEFINING LAYOUT
+
      QGridLayout *mainLayout=new QGridLayout;
      mainLayout->setSizeConstraint(QLayout::SetFixedSize);
-     mainLayout->addWidget(display,0,01,6);
+     mainLayout->addWidget(display,0,0,1,6);
      mainLayout->addWidget(backSpaceButton,1,0,1,2);
      mainLayout->addWidget(clearButton,1,2,1,2);
      mainLayout->addWidget(clearAllButton,1,4,1,2);
@@ -88,6 +93,9 @@ calculator::~calculator()
 {
     delete ui;
 }
+
+// DEFINING FUNCTION OF EVERY BUTTON... BY MAKING CLUSTERS OF OPERATORS..
+
 
 void calculator::digitClicked(){
     Button *clickedButton=qobject_cast<Button *>(sender());
@@ -132,7 +140,7 @@ void calculator::unaryOperatorClicked(){
     waitingForOperand=true;
 }
 
-void calculator::additiveOperator(){
+void calculator::additiveOperatorClicked(){
     Button *clickedButton=qobject_cast<Button *>(sender());
     QString clickedOperator=clickedButton->text();
     double operand=display->text().toDouble();
@@ -169,7 +177,7 @@ void calculator::multiplicativeOperatorClicked(){
     double operand=display->text().toDouble();
 
     if(!pendingMultiplicativeOperator.isEmpty()){
-        if(!calculate(operand,pendingMultiplicativeOperatorClicked)){
+        if(!calculate(operand,pendingMultiplicativeOperator)){
             abortOperation();
             return;
         }
@@ -290,3 +298,31 @@ void calculator::addToMemory(){
     sumInMemory += display->text().toDouble();
 }
 
+void calculator::abortOperation(){
+
+    clearAll();
+    display->setText(tr("####"));
+}
+
+bool calculator::calculate(double rightOperand, const QString &pendingOperator){
+
+    if (pendingOperator == tr("+")) {
+        sumSoFar += rightOperand;
+    } else if (pendingOperator == tr("-")) {
+        sumSoFar -= rightOperand;
+    } else if (pendingOperator == tr("\303\227")) {
+        factorSoFar *= rightOperand;
+    } else if (pendingOperator == tr("\303\267")) {
+        if (rightOperand == 0.0)
+            return false;
+        factorSoFar /= rightOperand;
+    }
+    return true;
+}
+
+Button *calculator::createButton(const QString &text, const char *member){
+
+    Button *button = new Button(text);
+    connect(button, SIGNAL(clicked()), this, member);
+    return button;
+}
