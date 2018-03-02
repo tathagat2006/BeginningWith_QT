@@ -25,10 +25,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        calculator.cpp
+        calculator.cpp \
+    button.cpp
 
 HEADERS += \
-        calculator.h
+        calculator.h \
+    button.h
 
 FORMS += \
         calculator.ui
